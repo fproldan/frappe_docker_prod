@@ -91,7 +91,6 @@ RUN git clone --depth 1 -b v5.x https://github.com/frappe/bench.git .bench \
 # Iniciamos bench e instalamos frappe.
 ENV FRAPPE_BRANCH version-15
 COPY apps.json /opt/frappe/apps.json
-COPY adelantos /opt/frappe/adelantos
 RUN bench init \
         --frappe-branch=${FRAPPE_BRANCH} \
         --frappe-path=https://github.com/frappe/frappe \

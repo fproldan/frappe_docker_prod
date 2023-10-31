@@ -1,5 +1,8 @@
-.env.example
+.env
+.apps.json
 
-node_modules
-
-__pycache__
+# Container
+apps
+db-vol
+logs
+sites

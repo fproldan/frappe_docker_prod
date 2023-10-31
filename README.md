@@ -2,9 +2,12 @@
 
 ```sh
 cp .env.example .env
+cp apps.example.json apps.json
 docker network create "$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f2)"
 docker compose build
 ```
+
+_Completar el archivo `apps.example.json` recién generado y editar el archivo `.env` a conveniencia._
 
 ## Ejecutar contenedor
 
@@ -31,15 +34,8 @@ site_name=frappe \
     --no-mariadb-socket \
   && bench use "$site_name" \
   && bench setup requirements \
-  && bench --site "$site_name" install-app $(cat sites/apps.json | jq -r 'keys[]' | tr '\n' ' ') \
+  && bench --site "$site_name" install-app frappe $(cat sites/apps.json | jq -r 'keys[]' | tr '\n' ' ') \
   && bench --site "$site_name" migrate \
-  && for APP_DIR in $(find apps -maxdepth 1 -mindepth 1 -type d -name "*" -not -name "frappe" -exec basename {} \;); do cp -r "apps/$APP_DIR/$APP_DIR/public" "sites/assets/$APP_DIR"; done
-
-# TEMPORAL, sólo para desarrollo
-# (docker kill $(docker ps -q) || true) && yes | docker system prune -a && yes | docker volume prune -a && docker network create "$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f2)" && docker compose build && docker compose up --remove-orphans --abort-on-container-exit
-bench set-config developer_mode true
+  # La sentencia `|| true` es para prevenir el error `cannot copy a directory, <*>, into itself`
+  && for APP_DIR in $(find apps -maxdepth 1 -mindepth 1 -type d -name "*" -not -name "frappe" -exec basename {} \;); do cp -r "apps/$APP_DIR/$APP_DIR/public" "sites/assets/$APP_DIR" || true; done
 ```
-
-## Ingresar
-
-http://localhost:8000

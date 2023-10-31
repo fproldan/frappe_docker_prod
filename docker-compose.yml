@@ -141,10 +141,14 @@ services:
       retries: 10
 
 volumes:
-  db-vol: null
-  sites: null
-  logs: null
-  apps: null
+  db-vol:
+    driver: local
+  sites:
+    driver: local
+  logs:
+    driver: local
+  apps:
+    driver: local
 
 networks:
   bench-network: null
