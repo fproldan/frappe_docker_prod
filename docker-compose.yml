@@ -1,0 +1,153 @@
+version: "3.8"
+
+x-default-networks: &default-networks
+  networks:
+    - bench-network
+    - db-network
+
+x-default-config: &default-config
+  <<: *default-networks
+  build: &default-build
+    context: .
+    args:
+      - DOCKER_DB_SERVICE_NAME=${DOCKER_DB_SERVICE_NAME}
+      - DOCKER_REDIS_CACHE_SERVICE_NAME=${DOCKER_REDIS_CACHE_SERVICE_NAME}
+      - DOCKER_REDIS_QUEUE_SERVICE_NAME=${DOCKER_REDIS_QUEUE_SERVICE_NAME}
+      - DOCKER_REDIS_SOCKETIO_SERVICE_NAME=${DOCKER_REDIS_SOCKETIO_SERVICE_NAME}
+  env_file:
+    - .env
+  volumes:
+    - sites:/home/frappe/frappe-bench/sites
+    - logs:/home/frappe/frappe-bench/logs
+    - apps:/home/frappe/frappe-bench/apps
+
+x-default-redis: &default-redis
+  <<: *default-networks
+  image: "redis:alpine"
+  healthcheck:
+    test: redis-cli ping
+    interval: 1s
+    retries: 10
+
+services:
+  frontend:
+    <<: *default-config
+    container_name: ${DOCKER_FRONTEND_SERVICE_NAME}
+    build:
+      <<: *default-build
+      target: frontend
+    ports:
+      - "${DOCKER_FRONTEND_SERVICE_PORT}:8080"
+    depends_on:
+      - backend
+
+  backend:
+    <<: *default-config
+    container_name: ${DOCKER_BACKEND_SERVICE_NAME}
+    build:
+      <<: *default-build
+      target: backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  websocket:
+    <<: *default-config
+    container_name: ${DOCKER_WEBSOCKET_SERVICE_NAME}
+    build:
+        <<: *default-build
+        target: websocket
+    depends_on:
+      - redis-cache
+      - backend
+
+  scheduler:
+    <<: *default-config
+    container_name: ${DOCKER_SCHEDULER_SERVICE_NAME}
+    build:
+        <<: *default-build
+        target: scheduler
+    depends_on:
+      - redis-cache
+      - backend
+
+  queue-default:
+    <<: *default-config
+    container_name: ${DOCKER_QUEUE_DEFAULT_SERVICE_NAME}
+    build:
+        <<: *default-build
+        target: queue-default
+    depends_on:
+      - redis-cache
+      - backend
+
+  queue-short:
+    <<: *default-config
+    container_name: ${DOCKER_QUEUE_SHORT_SERVICE_NAME}
+    build:
+        <<: *default-build
+        target: queue-short
+    depends_on:
+      - redis-cache
+      - backend
+
+  queue-long:
+    <<: *default-config
+    container_name: ${DOCKER_QUEUE_LONG_SERVICE_NAME}
+    build:
+        <<: *default-build
+        target: queue-long
+    depends_on:
+      - redis-cache
+      - backend
+
+  redis-cache:
+    <<: *default-redis
+    image: "redis:alpine"
+    container_name: ${DOCKER_REDIS_CACHE_SERVICE_NAME}
+    depends_on:
+      redis-socketio:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+
+  redis-socketio:
+    <<: *default-redis
+    container_name: ${DOCKER_REDIS_SOCKETIO_SERVICE_NAME}
+
+  redis-queue:
+    <<: *default-redis
+    container_name: ${DOCKER_REDIS_QUEUE_SERVICE_NAME}
+
+  db:
+    <<: *default-networks
+    image: "mariadb:10.6"
+    container_name: ${DOCKER_DB_SERVICE_NAME}
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--skip-character-set-client-handshake"
+      - "--skip-innodb-read-only-compressed"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_USER=${DB_USER}
+    volumes:
+      - db-vol:/var/lib/mysql
+    ports:
+      - ${DOCKER_DB_SERVICE_PORT}:3306
+    healthcheck:
+      test: mysqladmin ping -h localhost --password=${DB_ROOT_PASSWORD}
+      interval: 1s
+      retries: 10
+
+volumes:
+  db-vol: null
+  sites: null
+  logs: null
+  apps: null
+
+networks:
+  bench-network: null
+  db-network:
+    name: ${DOCKER_DB_NETWORK_NAME}
+    external: true
