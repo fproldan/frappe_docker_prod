@@ -36,6 +36,11 @@ site_name=frappe \
   && bench setup requirements \
   && bench --site "$site_name" install-app frappe $(cat sites/apps.json | jq -r 'keys[]' | tr '\n' ' ') \
   && bench --site "$site_name" migrate \
-  # La sentencia `|| true` es para prevenir el error `cannot copy a directory, <*>, into itself`
-  && for APP_DIR in $(find apps -maxdepth 1 -mindepth 1 -type d -name "*" -not -name "frappe" -exec basename {} \;); do cp -r "apps/$APP_DIR/$APP_DIR/public" "sites/assets/$APP_DIR" || true; done
+  &&
+    for APP_DIR in $(
+      find apps -maxdepth 1 -mindepth 1 -type d -name "*" -not -name "frappe" -exec basename {} \;
+    ); do
+      # La sentencia `|| true` es para prevenir el error `cannot copy a directory, <*>, into itself`
+      cp -r "apps/$APP_DIR/$APP_DIR/public" "sites/assets/$APP_DIR" || true;
+    done
 ```
