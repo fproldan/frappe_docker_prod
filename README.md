@@ -7,7 +7,7 @@ docker network create "$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f
 docker compose build
 ```
 
-_Completar el archivo `apps.example.json` recién generado y editar el archivo `.env` a conveniencia._
+_Completar el archivo `apps.json` recién generado y editar el archivo `.env` a conveniencia._
 
 ## Ejecutar contenedor
 
