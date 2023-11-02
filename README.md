@@ -44,3 +44,20 @@ site_name=frappe \
       cp -r "apps/$APP_DIR/$APP_DIR/public" "sites/assets/$APP_DIR" || true;
     done
 ```
+
+## Modo desarrollo
+
+1) Ingresar al contenedor de back:
+```sh
+docker compose exec -it backend bash
+```
+
+2) Poner un sitio en modo desarrollo:
+```sh
+# Nombre del sitio: frappe
+# ⚠️ Igualmente se define una variable de entorno que afecta a todos los sitios.
+site_name=frappe \
+  echo "export BENCH_DEVELOPER=1" >> ~/.bashrc \
+  bench --site "$site_name" set-config developer_mode 1 && \
+  bench --site "$site_name" clear-cache
+```

@@ -4,36 +4,37 @@ FROM python:3.11.4-slim-bookworm AS base
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update \
     && apt-get install --no-install-recommends -y \
-        # For frappe framework
+        # To work inside the container.
+        sudo \
+        nano \
+        vim \
+        curl \
+        jq \
+        less \
+        bash-completion \
+
+        # For frappe framework.
         git \
         mariadb-client \
         gettext-base \
         wget \
-        nano \
-        vim \
-        jq \
 
-        # wkhtmltopdf section
+        # Wkhtmltopdf dependencies.
         xfonts-75dpi \
         xfonts-base \
 
+        # Weasyprint dependencies.
         libpango-1.0-0 \
         libharfbuzz0b \
         libpangoft2-1.0-0 \
         libpangocairo-1.0-0 \
 
-        locales \
+        # Pandas dependencies.
+        libbz2-dev \
+        gcc \
         build-essential \
-        cron \
-        curl \
-        less \
-        nano \
 
-        sudo \
-
-
-        bash-completion \
-
+        # Other.
         libffi-dev \
         liblcms2-dev \
         libldap2-dev \
@@ -44,9 +45,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
         redis-tools \
         rlwrap \
         tk8.6-dev \
-
-        libbz2-dev \
-        gcc \
+        cron \
 
         && rm -rf /var/lib/apt/lists/*
 
@@ -89,7 +88,7 @@ RUN git clone --depth 1 -b v5.x https://github.com/frappe/bench.git .bench \
     && echo "export PATH=/home/frappe/.local/bin:\$PATH" >> ~/.bashrc
 
 # Iniciamos bench e instalamos frappe.
-ENV FRAPPE_BRANCH version-15
+ARG FRAPPE_BRANCH
 COPY apps.json /opt/frappe/apps.json
 RUN bench init \
         --frappe-branch=${FRAPPE_BRANCH} \
