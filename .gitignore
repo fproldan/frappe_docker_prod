@@ -1,8 +1,2 @@
 .env
 apps.json
-
-# Container
-apps
-db-vol
-logs
-sites

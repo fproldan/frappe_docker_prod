@@ -3,7 +3,7 @@
 ```sh
 cp .env.example .env
 cp apps.example.json apps.json
-docker network create "$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f2)"
+docker network create "$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)"_"$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f2)"
 docker compose build
 ```
 
@@ -21,8 +21,16 @@ Ejemplo del contenido de `apps.json`:
 
 ## Ejecutar contenedor
 
+Hay dos maneras de ejecutar el contenedor.
+
+A) Ejecutar el contenedor en primer plano:
 ```sh
 docker compose up --remove-orphans --abort-on-container-exit
+```
+
+B) Ejecutar el contenedor en segundo plano:
+```sh
+docker compose up --remove-orphans -d
 ```
 
 ## Crear Sitio
@@ -44,7 +52,7 @@ site_name=frappe \
     --no-mariadb-socket \
   && bench use "$site_name" \
   && bench setup requirements \
-  && bench --site "$site_name" install-app frappe $(cat sites/apps.json | jq -r 'keys[]' | tr '\n' ' ') \
+  && bench --site "$site_name" install-app $(cat sites/apps.json | jq -r 'keys[]' | tr '\n' ' ') \
   && bench --site "$site_name" migrate \
   &&
     for APP_DIR in $(
@@ -70,4 +78,20 @@ site_name=frappe \
   echo "export BENCH_DEVELOPER=1" >> ~/.bashrc \
   bench --site "$site_name" set-config developer_mode 1 && \
   bench --site "$site_name" clear-cache
+```
+
+## Manejar instancias
+
+Detener contenedores:
+```sh
+prefix="$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)" \
+  && docker kill $(docker ps --format="{{.Names}}" | grep "$prefix")
+```
+
+Eliminar instancias de docker levantadas, junto a sus volúmenes y networks:
+```sh
+prefix="$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)" \
+  && docker rm $(docker ps -a --format="{{.Names}}" | grep "$prefix") \
+  && docker volume rm $(docker volume ls --format="{{.Name}}" | grep "$prefix") \
+  && docker network rm $(docker network ls --format="{{.Name}}" | grep "$prefix")
 ```
