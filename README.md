@@ -9,6 +9,16 @@ docker compose build
 
 _Completar el archivo `apps.json` recién generado y editar el archivo `.env` a conveniencia._
 
+Ejemplo del contenido de `apps.json`:
+```
+[
+  {
+    "url": "https://github.com/frappe/wiki",
+    "branch": "master"
+  }
+]
+```
+
 ## Ejecutar contenedor
 
 ```sh
