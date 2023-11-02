@@ -102,8 +102,6 @@ RUN bench init \
     && echo "source ~/frappe-bench/env/bin/activate" > ~/.bashrc
 
 WORKDIR /home/frappe/frappe-bench
-RUN sudo chown -R frappe /home/frappe/frappe-bench/logs \
-    && sudo chown -R frappe /home/frappe/frappe-bench/sites
 
 ARG DOCKER_DB_SERVICE_NAME
 ARG DOCKER_REDIS_CACHE_SERVICE_NAME
