@@ -15,6 +15,7 @@ x-default-config: &default-config
       - DOCKER_REDIS_QUEUE_SERVICE_NAME=${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_QUEUE_SERVICE_NAME}
       - DOCKER_REDIS_SOCKETIO_SERVICE_NAME=${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_SOCKETIO_SERVICE_NAME}
       - FRAPPE_BRANCH=${FRAPPE_BRANCH}
+      - SITE_NAME=${SITE_NAME}
   env_file:
     - .env
   volumes:
@@ -39,6 +40,8 @@ services:
     build:
       <<: *default-build
       target: frontend
+    environment:
+      SITE_NAME: ${SITE_NAME}
     ports:
       - "${DOCKER_FRONTEND_SERVICE_PORT}:8080"
     depends_on:

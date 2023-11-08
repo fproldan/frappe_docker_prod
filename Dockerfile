@@ -130,6 +130,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
 COPY resources/nginx-template.conf /templates/nginx/frappe.conf.template
 COPY resources/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
 
+ARG SITE_NAME
+RUN sudo bash -c "sed -i 's/\$SITE_NAME/${SITE_NAME}/g' /usr/local/bin/nginx-entrypoint.sh"
 CMD [\
     "sudo", \
     "bash", \
