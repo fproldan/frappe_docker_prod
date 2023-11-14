@@ -4,7 +4,7 @@ FROM python:3.11.4-slim-bookworm AS base
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update \
     && apt-get install --no-install-recommends -y \
-        # To work inside the container.
+        # To work inside the container:
         sudo \
         nano \
         vim \
@@ -12,29 +12,24 @@ RUN DEBIAN_FRONTEND=noninteractive \
         jq \
         less \
         bash-completion \
-
-        # For frappe framework.
+        # For frappe framework:
         git \
         mariadb-client \
         gettext-base \
         wget \
-
-        # Wkhtmltopdf dependencies.
+        # Wkhtmltopdf dependencies:
         xfonts-75dpi \
         xfonts-base \
-
-        # Weasyprint dependencies.
+        # Weasyprint dependencies:
         libpango-1.0-0 \
         libharfbuzz0b \
         libpangoft2-1.0-0 \
         libpangocairo-1.0-0 \
-
-        # Pandas dependencies.
+        # Pandas dependencies:
         libbz2-dev \
         gcc \
         build-essential \
-
-        # Other.
+        # Other:
         libffi-dev \
         liblcms2-dev \
         libldap2-dev \
@@ -46,8 +41,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
         rlwrap \
         tk8.6-dev \
         cron \
-
-        && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Creamos un usuario.
 RUN groupadd -g 1000 frappe \
