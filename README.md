@@ -76,8 +76,8 @@ docker compose exec -it backend bash
 2) Poner un sitio en modo desarrollo:
 ```sh
 echo "export BENCH_DEVELOPER=1" >> ~/.bashrc \
-  bench --site "$SITE_NAME" set-config developer_mode 1 && \
-  bench --site "$SITE_NAME" clear-cache
+  && bench --site "$SITE_NAME" set-config developer_mode 1 \
+  && bench --site "$SITE_NAME" clear-cache
 ```
 
 ## Manejar instancias
