@@ -99,7 +99,7 @@ RUN bench init \
         --skip-redis-config-generation \
         --verbose \
         ~/frappe-bench \
-    && echo "source ~/frappe-bench/env/bin/activate" > ~/.bashrc
+    && echo "source ~/frappe-bench/env/bin/activate" >> ~/.bashrc
 
 WORKDIR /home/frappe/frappe-bench
 

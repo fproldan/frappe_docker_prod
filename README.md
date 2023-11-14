@@ -1,15 +1,13 @@
 ## Setup Inicial
 
+#### 1) Completar el archivo `apps.json` y `.env` a conveniencia.
+
 ```sh
 cp .env.example .env
 cp apps.example.json apps.json
-docker network create "$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)"_"$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f2)"
-docker compose build
 ```
 
-_Completar el archivo `apps.json` recién generado y editar el archivo `.env` a conveniencia._
-
-Ejemplo del contenido de `apps.json`:
+_Ejemplo del contenido de `apps.json`:_
 ```
 [
   {
@@ -17,6 +15,13 @@ Ejemplo del contenido de `apps.json`:
     "branch": "master"
   }
 ]
+```
+
+#### 2) Construir las imágenes y levantar la red interna.
+
+```sh
+docker compose build
+docker network create "$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)"_"$(grep -E '^DOCKER_DB_NETWORK_NAME=' .env | cut -d '=' -f2)"
 ```
 
 ## Ejecutar contenedor
@@ -86,7 +91,7 @@ prefix="$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)" \
 Eliminar instancias de docker levantadas, junto a sus volúmenes y networks:
 ```sh
 prefix="$(grep -E '^DOCKER_NAME_PREFIX=' .env | cut -d '=' -f2)" \
-  && docker rm $(docker ps -a --format="{{.Names}}" | grep "$prefix") \
-  && docker volume rm $(docker volume ls --format="{{.Name}}" | grep "$prefix") \
-  && docker network rm $(docker network ls --format="{{.Name}}" | grep "$prefix")
+  && docker rm $(docker ps -a --format="{{.Names}}" | grep "$prefix") || true \
+  && docker volume rm $(docker volume ls --format="{{.Name}}" | grep "$prefix") || true \
+  && docker network rm $(docker network ls --format="{{.Name}}" | grep "$prefix") || true
 ```
