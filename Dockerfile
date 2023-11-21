@@ -83,11 +83,12 @@ RUN git clone --depth 1 -b v5.x https://github.com/frappe/bench.git .bench \
 
 # Iniciamos bench e instalamos frappe.
 ARG FRAPPE_BRANCH
-COPY apps.json /opt/frappe/apps.json
+COPY local-apps /opt/apps
+COPY apps.json /opt/apps/apps.json
 RUN bench init \
         --frappe-branch=${FRAPPE_BRANCH} \
         --frappe-path=https://github.com/frappe/frappe \
-        --apps_path=/opt/frappe/apps.json \
+        --apps_path=/opt/apps/apps.json \
         --no-procfile \
         --no-backups \
         --skip-redis-config-generation \
