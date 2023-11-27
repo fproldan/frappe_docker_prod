@@ -9,13 +9,11 @@ x-default-config: &default-config
   <<: *default-networks
   build: &default-build
     context: .
-    args:
-      - DOCKER_DB_SERVICE_NAME=${DOCKER_NAME_PREFIX}_${DOCKER_DB_SERVICE_NAME}
-      - DOCKER_REDIS_CACHE_SERVICE_NAME=${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_CACHE_SERVICE_NAME}
-      - DOCKER_REDIS_QUEUE_SERVICE_NAME=${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_QUEUE_SERVICE_NAME}
-      - DOCKER_REDIS_SOCKETIO_SERVICE_NAME=${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_SOCKETIO_SERVICE_NAME}
-      - FRAPPE_BRANCH=${FRAPPE_BRANCH}
-      - SITE_NAME=${SITE_NAME}
+  environment:
+    - DB_HOST=${DOCKER_NAME_PREFIX}_db
+    - REDIS_CACHE_HOST=${DOCKER_NAME_PREFIX}_redis_cache:6379
+    - REDIS_QUEUE_HOST=${DOCKER_NAME_PREFIX}_redis_queue:6379
+    - REDIS_SOCKETIO_HOST=${DOCKER_NAME_PREFIX}_redis_socketio:6379
   env_file:
     - .env
   volumes:
@@ -23,6 +21,18 @@ x-default-config: &default-config
     - sites:/home/frappe/frappe-bench/sites
     - apps:/home/frappe/frappe-bench/apps
   restart: unless-stopped
+
+x-backend-and-redis-dependents: &backend-and-redis-dependents
+  <<: *default-config
+  depends_on:
+    backend:
+      condition: service_healthy
+    redis-cache:
+      condition: service_healthy
+    redis-socketio:
+      condition: service_healthy
+    redis-queue:
+      condition: service_healthy
 
 x-default-redis: &default-redis
   <<: *default-networks
@@ -36,99 +46,44 @@ x-default-redis: &default-redis
 services:
   frontend:
     <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_FRONTEND_SERVICE_NAME}
+    container_name: ${DOCKER_NAME_PREFIX}_frontend
     build:
       <<: *default-build
       target: frontend
-    environment:
-      SITE_NAME: ${SITE_NAME}
     ports:
       - "${DOCKER_FRONTEND_SERVICE_PORT}:8080"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+      scheduler:
+        condition: service_started
+      websocket:
+        condition: service_started
+      queue-default:
+        condition: service_started
+      queue-short:
+        condition: service_started
+      queue-long:
+        condition: service_started
 
   backend:
     <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_BACKEND_SERVICE_NAME}
+    container_name: ${DOCKER_NAME_PREFIX}_backend
     build:
       <<: *default-build
       target: backend
     depends_on:
       db:
         condition: service_healthy
-
-  websocket:
-    <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_WEBSOCKET_SERVICE_NAME}
-    build:
-        <<: *default-build
-        target: websocket
-    depends_on:
-      - redis-cache
-      - backend
-
-  scheduler:
-    <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_SCHEDULER_SERVICE_NAME}
-    build:
-        <<: *default-build
-        target: scheduler
-    depends_on:
-      - redis-cache
-      - backend
-
-  queue-default:
-    <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_QUEUE_DEFAULT_SERVICE_NAME}
-    build:
-        <<: *default-build
-        target: queue-default
-    depends_on:
-      - redis-cache
-      - backend
-
-  queue-short:
-    <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_QUEUE_SHORT_SERVICE_NAME}
-    build:
-        <<: *default-build
-        target: queue-short
-    depends_on:
-      - redis-cache
-      - backend
-
-  queue-long:
-    <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_QUEUE_LONG_SERVICE_NAME}
-    build:
-        <<: *default-build
-        target: queue-long
-    depends_on:
-      - redis-cache
-      - backend
-
-  redis-cache:
-    <<: *default-redis
-    image: "redis:alpine"
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_CACHE_SERVICE_NAME}
-    depends_on:
-      redis-socketio:
-        condition: service_healthy
-      redis-queue:
-        condition: service_healthy
-
-  redis-socketio:
-    <<: *default-redis
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_SOCKETIO_SERVICE_NAME}
-
-  redis-queue:
-    <<: *default-redis
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_REDIS_QUEUE_SERVICE_NAME}
+    healthcheck:
+      test: ["CMD", "test", "-d", "/home/frappe/frappe-bench/sites/$SITE_NAME"]
+      interval: 10s
+      retries: 30
 
   db:
     <<: *default-networks
     image: "mariadb:10.6"
-    container_name: ${DOCKER_NAME_PREFIX}_${DOCKER_DB_SERVICE_NAME}
+    container_name: ${DOCKER_NAME_PREFIX}_db
     command:
       - "--character-set-server=utf8mb4"
       - "--collation-server=utf8mb4_unicode_ci"
@@ -138,7 +93,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_USER=${DB_USER}
     volumes:
-      - db-vol:/var/lib/mysql
+      - db_vol:/var/lib/mysql
     ports:
       - ${DOCKER_DB_SERVICE_PORT}:3306
     healthcheck:
@@ -147,14 +102,63 @@ services:
       retries: 10
     restart: unless-stopped
 
+  scheduler:
+    <<: *backend-and-redis-dependents
+    container_name: ${DOCKER_NAME_PREFIX}_scheduler
+    build:
+      <<: *default-build
+      target: scheduler
+
+  websocket:
+    <<: *backend-and-redis-dependents
+    container_name: ${DOCKER_NAME_PREFIX}_websocket
+    build:
+      <<: *default-build
+      target: websocket
+
+  queue-default:
+    <<: *backend-and-redis-dependents
+    container_name: ${DOCKER_NAME_PREFIX}_queue_default
+    build:
+      <<: *default-build
+      target: queue-default
+
+  queue-short:
+    <<: *backend-and-redis-dependents
+    container_name: ${DOCKER_NAME_PREFIX}_queue_short
+    build:
+      <<: *default-build
+      target: queue-short
+
+  queue-long:
+    <<: *backend-and-redis-dependents
+    container_name: ${DOCKER_NAME_PREFIX}_queue_long
+    build:
+      <<: *default-build
+      target: queue-long
+
+  redis-cache:
+    <<: *default-redis
+    container_name: ${DOCKER_NAME_PREFIX}_redis_cache
+
+  redis-socketio:
+    <<: *default-redis
+    container_name: ${DOCKER_NAME_PREFIX}_redis_socketio
+
+  redis-queue:
+    <<: *default-redis
+    container_name: ${DOCKER_NAME_PREFIX}_redis_queue
+
 volumes:
-  db-vol: null
-  sites: null
-  logs: null
-  apps: null
+  db_vol:
+    name: ${DOCKER_NAME_PREFIX}_db_vol
+  sites:
+    name: ${DOCKER_NAME_PREFIX}_sites
+  logs:
+    name: ${DOCKER_NAME_PREFIX}_logs
+  apps:
+    name: ${DOCKER_NAME_PREFIX}_apps
 
 networks:
   bench-network: null
-  db-network:
-    name: ${DOCKER_NAME_PREFIX}_${DOCKER_DB_NETWORK_NAME}
-    external: true
+  db-network: null

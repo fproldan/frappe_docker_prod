@@ -1,0 +1,84 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Web",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/sites",
+      "program": "${workspaceFolder}/apps/frappe/frappe/utils/bench_helper.py",
+      "args": [
+        "frappe",
+        "serve",
+        "--port",
+        "8000",
+        "--noreload",
+        "--nothreading"
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Websocket",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/sites",
+      "args": [
+        "apps/frappe/socketio.js"
+      ]
+    },
+    {
+      "name": "Scheduler",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/env/bin/honcho",
+      "args": [
+        "start",
+        "schedule"
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Worker - Default",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/sites",
+      "program": "${workspaceFolder}/apps/frappe/frappe/utils/bench_helper.py",
+      "args": [
+        "frappe",
+        "worker",
+        "--queue",
+        "default"
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Worker - Short",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/sites",
+      "program": "${workspaceFolder}/apps/frappe/frappe/utils/bench_helper.py",
+      "args": [
+        "frappe",
+        "worker",
+        "--queue",
+        "short"
+      ],
+      "justMyCode": false
+    },
+    {
+      "name": "Worker - Long",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/sites",
+      "program": "${workspaceFolder}/apps/frappe/frappe/utils/bench_helper.py",
+      "args": [
+        "frappe",
+        "worker",
+        "--queue",
+        "long"
+      ],
+      "justMyCode": false
+    }
+  ]
+}

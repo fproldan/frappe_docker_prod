@@ -1,0 +1,101 @@
+version: "3.8"
+
+x-default-networks: &default-networks
+  networks:
+    - network
+
+x-default-config: &default-config
+  <<: *default-networks
+  build: &default-build
+    context: ..
+    dockerfile: .devcontainer/Dockerfile
+  environment:
+    - DB_HOST=${DOCKER_NAME_PREFIX}_db
+    - REDIS_CACHE_HOST=${DOCKER_NAME_PREFIX}_redis_cache:6379
+    - REDIS_QUEUE_HOST=${DOCKER_NAME_PREFIX}_redis_queue:6379
+    - REDIS_SOCKETIO_HOST=${DOCKER_NAME_PREFIX}_redis_socketio:6379
+  env_file:
+    - .env
+  volumes:
+    - ../frappe-bench:/home/frappe/frappe-bench
+
+x-default-redis: &default-redis
+  <<: *default-networks
+  image: "redis:alpine"
+  healthcheck:
+    test: redis-cli ping
+    interval: 1s
+    retries: 10
+
+services:
+  editor:
+    <<: *default-config
+    container_name: ${DOCKER_NAME_PREFIX}_editor
+    build:
+      <<: *default-build
+      target: editor
+    ports:
+      - "${DOCKER_EDITOR_SERVICE_PORT}:8000"
+    depends_on:
+      setup:
+        condition: service_started
+
+  setup:
+    <<: *default-config
+    container_name: ${DOCKER_NAME_PREFIX}_setup
+    build:
+      <<: *default-build
+      target: setup
+    depends_on:
+      db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+      redis-socketio:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-d", "/home/frappe/frappe-bench/sites/$SITE_NAME"]
+      interval: 10s
+      retries: 30
+
+  db:
+    <<: *default-networks
+    image: "mariadb:10.6"
+    container_name: ${DOCKER_NAME_PREFIX}_db
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--skip-character-set-client-handshake"
+      - "--skip-innodb-read-only-compressed"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_USER=${DB_USER}
+    volumes:
+      - db_vol:/var/lib/mysql
+    ports:
+      - ${DOCKER_DB_SERVICE_PORT}:3306
+    healthcheck:
+      test: mysqladmin ping -h localhost --password=${DB_ROOT_PASSWORD}
+      interval: 1s
+      retries: 10
+
+  redis-cache:
+    <<: *default-redis
+    container_name: ${DOCKER_NAME_PREFIX}_redis_cache
+
+  redis-socketio:
+    <<: *default-redis
+    container_name: ${DOCKER_NAME_PREFIX}_redis_socketio
+
+  redis-queue:
+    <<: *default-redis
+    container_name: ${DOCKER_NAME_PREFIX}_redis_queue
+
+volumes:
+  db_vol:
+    name: ${DOCKER_NAME_PREFIX}_db_vol
+
+networks:
+  network: null

@@ -45,7 +45,15 @@ RUN DEBIAN_FRONTEND=noninteractive \
 
 # Creamos un usuario.
 RUN groupadd -g 1000 frappe \
-    && useradd --no-log-init -r -m -u 1000 -g 1000 -G sudo frappe \
+    && useradd \
+        --no-log-init \
+        --system \
+        --create-home \
+        --shell /bin/bash \
+        --uid 1000 \
+        --gid 1000 \
+        --groups sudo \
+        frappe \
     && echo "frappe ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 USER frappe
 WORKDIR /home/frappe
@@ -81,90 +89,24 @@ RUN git clone --depth 1 -b v5.x https://github.com/frappe/bench.git .bench \
     && pip install --no-cache-dir --user -e .bench \
     && echo "export PATH=/home/frappe/.local/bin:\$PATH" >> ~/.bashrc
 
-# Iniciamos bench e instalamos frappe.
 COPY local-apps /opt/apps
 COPY apps.json /opt/apps/apps.json
-RUN bench init \
-        --frappe-branch=${FRAPPE_BRANCH} \
-        --frappe-path=https://github.com/frappe/frappe \
-        --apps_path=/opt/apps/apps.json \
-        --no-procfile \
-        --no-backups \
-        --skip-redis-config-generation \
-        --verbose \
-        ~/frappe-bench \
-    && echo "source ~/frappe-bench/env/bin/activate" >> ~/.bashrc
 
-WORKDIR /home/frappe/frappe-bench
+RUN echo "export BENCH_DEVELOPER=1" >> ~/.bashrc \
+    && echo "export DEV_SERVER=1" >> ~/.bashrc
 
-RUN bench set-config -g db_host ${DB_HOST} \
-    && bench set-redis-cache-host ${REDIS_CACHE_HOST} \
-    && bench set-redis-queue-host ${REDIS_QUEUE_HOST} \
-    && bench set-redis-socketio-host ${REDIS_SOCKETIO_HOST}
+FROM base AS editor
 
-FROM base AS frontend
-
-# Instalamos NGINX.
+# Required to work with VSCode.
 RUN DEBIAN_FRONTEND=noninteractive \
-    && sudo apt-get update \
-    && sudo apt-get install --no-install-recommends -y nginx \
-    && sudo chown -R frappe /var/lib/nginx \
-    && sudo ln -sf /dev/stdout /var/log/nginx/access.log \
-    && sudo ln -sf /dev/stderr /var/log/nginx/error.log \
-    && sudo chown -R frappe /var/log/nginx \
-    && sudo chown -R frappe /etc/nginx \
-    && rm -rf /etc/nginx/sites-enabled/default \
-    && sed -i '/user www-data/d' /etc/nginx/nginx.conf \
-    && sudo touch /run/nginx.pid \
-    && sudo chown -R frappe /run/nginx.pid
-COPY resources/nginx-template.conf /templates/nginx/frappe.conf.template
-COPY resources/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+    sudo apt-get update \
+    && sudo apt-get install --no-install-recommends -y net-tools
 
-RUN sudo bash -c "sed -i 's/\$SITE_NAME/${SITE_NAME}/g' /usr/local/bin/nginx-entrypoint.sh"
-CMD [\
-    "sudo", \
-    "bash", \
-    "/usr/local/bin/nginx-entrypoint.sh" \
-]
+CMD ["sleep", "infinity"]
 
-FROM base AS backend
+FROM base AS setup
 
-COPY entrypoint.sh entrypoint.sh
+COPY .devcontainer/.vscode .vscode
+COPY .devcontainer/entrypoint.sh entrypoint.sh
 RUN sudo chmod +x entrypoint.sh
-ENTRYPOINT "/home/frappe/frappe-bench/entrypoint.sh"
-
-FROM base AS websocket
-CMD [\
-    "node", \
-    "apps/frappe/socketio.js" \
-]
-
-FROM base AS scheduler
-CMD [\
-    "bench", \
-    "schedule" \
-]
-
-FROM base AS queue-default
-CMD [\
-    "bench", \
-    "worker", \
-    "--queue", \
-    "default" \
-]
-
-FROM base AS queue-short
-CMD [\
-    "bench", \
-    "worker", \
-    "--queue", \
-    "short" \
-]
-
-FROM base AS queue-long
-CMD [\
-    "bench", \
-    "worker", \
-    "--queue", \
-    "long" \
-]
+ENTRYPOINT "/home/frappe/entrypoint.sh"

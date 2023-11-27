@@ -1,2 +1,5 @@
 .env
 apps.json
+
+# Development mode.
+frappe-bench
