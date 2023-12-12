@@ -1,6 +1,5 @@
 FROM python:3.11.4-slim-bookworm AS base
 
-# DONE
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update \
     && apt-get install --no-install-recommends -y \
@@ -43,14 +42,14 @@ RUN DEBIAN_FRONTEND=noninteractive \
         cron \
     && rm -rf /var/lib/apt/lists/*
 
-# Creamos un usuario.
+# Create the user.
 RUN groupadd -g 1000 frappe \
     && useradd --no-log-init -r -m -u 1000 -g 1000 -G sudo frappe \
     && echo "frappe ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 USER frappe
 WORKDIR /home/frappe
 
-# Instalamos Node.js.
+# Install Node.js.
 ENV NODE_VERSION 18.18.1
 ENV NVM_DIR /home/frappe/.nvm
 ENV PATH ${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:$PATH
@@ -66,7 +65,7 @@ RUN wget -O- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | b
     && echo '[ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"' >> ~/.bashrc \
     && echo '[ -s "${NVM_DIR}/bash_completion" ] && \. "${NVM_DIR}/bash_completion"' >> ~/.bashrc
 
-# Instalamos wkhtmltopdf.
+# Install wkhtmltopdf.
 ENV WKHTMLTOPDF_VERSION 0.12.6.1-3
 RUN if [ "$(uname -m)" = "aarch64" ]; then export ARCH=arm64; fi \
     && if [ "$(uname -m)" = "x86_64" ]; then export ARCH=amd64; fi \
@@ -75,13 +74,13 @@ RUN if [ "$(uname -m)" = "aarch64" ]; then export ARCH=arm64; fi \
     && sudo dpkg -i "$downloaded_file" \
     && rm "$downloaded_file"
 
-# Instalamos bench.
+# Install bench.
 ENV PATH /home/frappe/.local/bin:$PATH
 RUN git clone --depth 1 -b v5.x https://github.com/frappe/bench.git .bench \
     && pip install --no-cache-dir --user -e .bench \
     && echo "export PATH=/home/frappe/.local/bin:\$PATH" >> ~/.bashrc
 
-# Iniciamos bench e instalamos frappe.
+# Setup bench and initial apps.
 COPY local-apps /opt/apps
 COPY apps.json /opt/apps/apps.json
 RUN bench init \
@@ -102,9 +101,9 @@ RUN bench set-config -g db_host ${DB_HOST} \
     && bench set-redis-queue-host ${REDIS_QUEUE_HOST} \
     && bench set-redis-socketio-host ${REDIS_SOCKETIO_HOST}
 
-FROM base AS frontend
+FROM base AS reverse_proxy
 
-# Instalamos NGINX.
+# Install NGINX.
 RUN DEBIAN_FRONTEND=noninteractive \
     && sudo apt-get update \
     && sudo apt-get install --no-install-recommends -y nginx \
@@ -127,7 +126,7 @@ CMD [\
     "/usr/local/bin/nginx-entrypoint.sh" \
 ]
 
-FROM base AS backend
+FROM base AS server
 
 COPY entrypoint.sh entrypoint.sh
 RUN sudo chmod +x entrypoint.sh

@@ -6,9 +6,6 @@ x-default-networks: &default-networks
 
 x-default-config: &default-config
   <<: *default-networks
-  build: &default-build
-    context: ..
-    dockerfile: .devcontainer/Dockerfile
   environment:
     - DB_HOST=${DOCKER_NAME_PREFIX}_db
     - REDIS_CACHE_HOST=${DOCKER_NAME_PREFIX}_redis_cache:6379
@@ -18,6 +15,10 @@ x-default-config: &default-config
     - .env
   volumes:
     - ../frappe-bench:/home/frappe/frappe-bench
+
+x-build: &default-build
+  context: ..
+  dockerfile: .devcontainer/Dockerfile
 
 x-default-redis: &default-redis
   <<: *default-networks
@@ -38,6 +39,10 @@ services:
       - "${DOCKER_EDITOR_SERVICE_PORT}:8000"
     depends_on:
       setup:
+        condition: service_healthy
+      websocket:
+        condition: service_started
+      scheduler:
         condition: service_started
 
   setup:
@@ -80,6 +85,28 @@ services:
       test: mysqladmin ping -h localhost --password=${DB_ROOT_PASSWORD}
       interval: 1s
       retries: 10
+
+  scheduler:
+    <<: *default-config
+    container_name: ${DOCKER_NAME_PREFIX}_scheduler
+    build:
+      <<: *default-build
+      target: scheduler
+    depends_on:
+      setup:
+        condition: service_healthy
+
+  websocket:
+    <<: *default-config
+    container_name: ${DOCKER_NAME_PREFIX}_websocket
+    build:
+      <<: *default-build
+      target: websocket
+    ports:
+      - "${DOCKER_WEBSOCKET_SERVICE_PORT}:9000"
+    depends_on:
+      setup:
+        condition: service_healthy
 
   redis-cache:
     <<: *default-redis

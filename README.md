@@ -44,7 +44,7 @@ docker compose up --remove-orphans -d
 #### 1) Ingresar al contenedor de back
 
 ```sh
-docker compose exec -it backend bash
+docker compose exec -it server bash
 ```
 
 #### 2) Poner el sitio en modo desarrollo

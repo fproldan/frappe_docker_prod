@@ -2,13 +2,10 @@ version: "3.8"
 
 x-default-networks: &default-networks
   networks:
-    - bench-network
-    - db-network
+    - network
 
 x-default-config: &default-config
   <<: *default-networks
-  build: &default-build
-    context: .
   environment:
     - DB_HOST=${DOCKER_NAME_PREFIX}_db
     - REDIS_CACHE_HOST=${DOCKER_NAME_PREFIX}_redis_cache:6379
@@ -22,10 +19,13 @@ x-default-config: &default-config
     - apps:/home/frappe/frappe-bench/apps
   restart: unless-stopped
 
-x-backend-and-redis-dependents: &backend-and-redis-dependents
+x-build: &default-build
+  context: .
+
+x-server-and-redis-dependents: &server-and-redis-dependents
   <<: *default-config
   depends_on:
-    backend:
+    server:
       condition: service_healthy
     redis-cache:
       condition: service_healthy
@@ -44,16 +44,16 @@ x-default-redis: &default-redis
   restart: unless-stopped
 
 services:
-  frontend:
+  reverse_proxy:
     <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_frontend
+    container_name: ${DOCKER_NAME_PREFIX}_reverse_proxy
     build:
       <<: *default-build
-      target: frontend
+      target: reverse_proxy
     ports:
-      - "${DOCKER_FRONTEND_SERVICE_PORT}:8080"
+      - "${DOCKER_REVERSE_PROXY_SERVICE_PORT}:8080"
     depends_on:
-      backend:
+      server:
         condition: service_healthy
       scheduler:
         condition: service_started
@@ -66,12 +66,12 @@ services:
       queue-long:
         condition: service_started
 
-  backend:
+  server:
     <<: *default-config
-    container_name: ${DOCKER_NAME_PREFIX}_backend
+    container_name: ${DOCKER_NAME_PREFIX}_server
     build:
       <<: *default-build
-      target: backend
+      target: server
     depends_on:
       db:
         condition: service_healthy
@@ -103,35 +103,35 @@ services:
     restart: unless-stopped
 
   scheduler:
-    <<: *backend-and-redis-dependents
+    <<: *server-and-redis-dependents
     container_name: ${DOCKER_NAME_PREFIX}_scheduler
     build:
       <<: *default-build
       target: scheduler
 
   websocket:
-    <<: *backend-and-redis-dependents
+    <<: *server-and-redis-dependents
     container_name: ${DOCKER_NAME_PREFIX}_websocket
     build:
       <<: *default-build
       target: websocket
 
   queue-default:
-    <<: *backend-and-redis-dependents
+    <<: *server-and-redis-dependents
     container_name: ${DOCKER_NAME_PREFIX}_queue_default
     build:
       <<: *default-build
       target: queue-default
 
   queue-short:
-    <<: *backend-and-redis-dependents
+    <<: *server-and-redis-dependents
     container_name: ${DOCKER_NAME_PREFIX}_queue_short
     build:
       <<: *default-build
       target: queue-short
 
   queue-long:
-    <<: *backend-and-redis-dependents
+    <<: *server-and-redis-dependents
     container_name: ${DOCKER_NAME_PREFIX}_queue_long
     build:
       <<: *default-build
@@ -160,5 +160,4 @@ volumes:
     name: ${DOCKER_NAME_PREFIX}_apps
 
 networks:
-  bench-network: null
-  db-network: null
+  network: null

@@ -38,14 +38,10 @@ if [[ ! -d ~/frappe-bench/sites/"$SITE_NAME" ]]; then
     bench setup requirements
     bench --site "$SITE_NAME" install-app $(jq -r 'keys[]' < sites/apps.json | tr '\n' ' ')
     bench --site "$SITE_NAME" migrate
-    for APP_DIR in $(
-        find apps -maxdepth 1 -mindepth 1 -type d -name "*" -not -name "frappe" -exec basename {} \;
-    ); do
-        # La sentencia `|| true` es para prevenir el error de salida (no el mensaje) `cannot copy a directory, <*>, into itself`
-        cp -r apps/"$APP_DIR"/"$APP_DIR"/public sites/assets/"$APP_DIR" || true;
-    done
 
     cp -r ~/.vscode .
+
+    echo "Setup done"
 fi
 
 sleep infinity
