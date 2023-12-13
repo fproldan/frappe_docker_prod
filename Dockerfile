@@ -96,6 +96,10 @@ RUN bench init \
 
 WORKDIR /home/frappe/frappe-bench
 
+ARG DB_HOST
+ARG REDIS_CACHE_HOST
+ARG REDIS_QUEUE_HOST
+ARG REDIS_SOCKETIO_HOST
 RUN bench set-config -g db_host ${DB_HOST} \
     && bench set-redis-cache-host ${REDIS_CACHE_HOST} \
     && bench set-redis-queue-host ${REDIS_QUEUE_HOST} \

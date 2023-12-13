@@ -6,11 +6,6 @@ x-default-networks: &default-networks
 
 x-default-config: &default-config
   <<: *default-networks
-  environment:
-    - DB_HOST=${DOCKER_NAME_PREFIX}_db
-    - REDIS_CACHE_HOST=${DOCKER_NAME_PREFIX}_redis_cache:6379
-    - REDIS_QUEUE_HOST=${DOCKER_NAME_PREFIX}_redis_queue:6379
-    - REDIS_SOCKETIO_HOST=${DOCKER_NAME_PREFIX}_redis_socketio:6379
   env_file:
     - .env
   volumes:
@@ -21,6 +16,11 @@ x-default-config: &default-config
 
 x-build: &default-build
   context: .
+  args:
+    - DB_HOST=${DOCKER_NAME_PREFIX}_db
+    - REDIS_CACHE_HOST=${DOCKER_NAME_PREFIX}_redis_cache:6379
+    - REDIS_QUEUE_HOST=${DOCKER_NAME_PREFIX}_redis_queue:6379
+    - REDIS_SOCKETIO_HOST=${DOCKER_NAME_PREFIX}_redis_socketio:6379
 
 x-server-and-redis-dependents: &server-and-redis-dependents
   <<: *default-config
