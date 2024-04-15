@@ -49,6 +49,8 @@ RUN groupadd -g 1000 frappe \
 USER frappe
 WORKDIR /home/frappe
 
+ARG SITE_NAME
+
 # Install Node.js.
 ENV NODE_VERSION 18.18.1
 ENV NVM_DIR /home/frappe/.nvm
