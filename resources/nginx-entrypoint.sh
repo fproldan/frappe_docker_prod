@@ -9,6 +9,8 @@ export FRAPPE_SITE_NAME_HEADER=$SITE_NAME
 export PROXY_READ_TIMEOUT=120
 export CLIENT_MAX_BODY_SIZE=50m
 
+echo ">>> ${FRAPPE_SITE_NAME_HEADER} <<< ${SERVER} || $(printenv) @@@@@@"
+
 envsubst '${SERVER}
   ${SOCKETIO}
   ${UPSTREAM_REAL_IP_ADDRESS}
