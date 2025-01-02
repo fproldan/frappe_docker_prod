@@ -28,6 +28,9 @@ RUN DEBIAN_FRONTEND=noninteractive \
         libbz2-dev \
         gcc \
         build-essential \
+        # Dependencies for m2crypto:
+        libssl-dev \
+        swig \
         # Other:
         libffi-dev \
         liblcms2-dev \
