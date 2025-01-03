@@ -96,14 +96,14 @@ services:
       - "--collation-server=utf8mb4_unicode_ci"
       - "--skip-character-set-client-handshake"
       - "--skip-innodb-read-only-compressed"
-      - "--bind-address=127.0.0.1"
+      - "--bind-address=0.0.0.0"
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_USER=${DB_USER}
     volumes:
       - db_vol:/var/lib/mysql
     ports:
-      - ${DOCKER_DB_SERVICE_PORT}:3306
+      - 127.0.0.1:${DOCKER_DB_SERVICE_PORT}:3306
     healthcheck:
       test: mysqladmin ping -h localhost --password=${DB_ROOT_PASSWORD}
       interval: 1s
