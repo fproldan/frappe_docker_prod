@@ -96,6 +96,7 @@ services:
       - "--collation-server=utf8mb4_unicode_ci"
       - "--skip-character-set-client-handshake"
       - "--skip-innodb-read-only-compressed"
+      - "--bind-address=127.0.0.1"
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_USER=${DB_USER}
