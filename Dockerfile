@@ -28,6 +28,9 @@ RUN DEBIAN_FRONTEND=noninteractive \
         libbz2-dev \
         gcc \
         build-essential \
+        # Dependencies for m2crypto:
+        libssl-dev \
+        swig \
         # Other:
         libffi-dev \
         liblcms2-dev \
@@ -82,12 +85,16 @@ RUN git clone --depth 1 -b v5.x https://github.com/frappe/bench.git .bench \
     && pip install --no-cache-dir --user -e .bench \
     && echo "export PATH=/home/frappe/.local/bin:\$PATH" >> ~/.bashrc
 
+# Setup del repositorio de Frappe
+ARG FRAPPE_REPO
+ARG FRAPPE_BRANCH
+
 # Setup bench and initial apps.
 COPY local-apps /opt/apps
 COPY apps.json /opt/apps/apps.json
 RUN bench init \
         --frappe-branch=${FRAPPE_BRANCH} \
-        --frappe-path=https://github.com/frappe/frappe \
+        --frappe-path=${FRAPPE_REPO} \
         --apps_path=/opt/apps/apps.json \
         --no-procfile \
         --no-backups \

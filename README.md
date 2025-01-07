@@ -15,6 +15,10 @@ _Ejemplo del contenido de `apps.json`:_
   {
     "url": "https://github.com/frappe/wiki",
     "branch": "master"
+  },
+  {
+    "url": "https://<token>@github.com/<usuario>/<repositorio>", // Repo privado
+    "branch": "develop"
   }
 ]
 ```

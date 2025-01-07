@@ -14,6 +14,7 @@ if [[ ! -d ~/frappe-bench/sites/"$SITE_NAME" ]]; then
     bench use "$SITE_NAME"
 
     # Install apps.
+    bench enable-scheduler 
     bench setup requirements
     bench --site "$SITE_NAME" install-app $(jq -r 'keys[]' < sites/apps.json | tr '\n' ' ')
     bench --site "$SITE_NAME" migrate
